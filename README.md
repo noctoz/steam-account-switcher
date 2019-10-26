@@ -1,17 +1,17 @@
-# steam-account-switcher
-Steam Account Switcher written in Python with mobile support!  
-Made in Python 2.7
-
-Binarys up soon.
+# NoctozSteamAccountSwitcher
+Steam Account Switcher written in Python with mobile support!
 
 ## TO-DO
-* Encryption / Master password
+* Master password
+
+## Installation
+* pip install pyautoit
+* pip install steam
+* pip install pycryptodome
 
 ## Instructions
-* Install dependencies (see requirements.txt)
-* Run the python script
-* Enjoy
+* Run python script
 
 ## Config
-Config is stored in %appdata%\jfx\users.json or DRIVE:\Users\USERNAME\AppData\Roaming\jfx\users.json  
+Config is stored in %appdata%\NoctozSteamAccountSwitcher\users.json or DRIVE:\Users\USERNAME\AppData\Roaming\NoctozSteamAccountSwitcher\users.json  
 As of now encryption hasn't been added so please note your credentials are stored in plaintext,

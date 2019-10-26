@@ -1,18 +1,15 @@
-	# Steam Smurf Switcher with mobile support using steam.guard by ValvePython and PyAutoIt by jacexh #
-						# PyAutoIt: https://pypi.python.org/pypi/PyAutoIt/0.4 #
-						# steam.guard: https://github.com/ValvePython/steam #
-											# Much love, jfx #
-									
-# TO-DO: 
-# Encryption #:
-	# Coming soon, AES encryption with master password #
+# Noctoz Steam Account Switcher using steam.guard by ValvePython and PyAutoIt by jacexh #
 
 import autoit, time, os, json, subprocess, base64
+from base64 import b64encode, b64decode
 import steam.guard as sa
+from Crypto.Cipher import AES
 
 # Config settings here, feel free to change them!
-configpath = os.getenv('APPDATA')+"\\jfx"
+configpath = os.getenv('APPDATA')+"\\NoctozAccountSwitcher"
 config = configpath + "\\users.json"
+
+key = b"<FbZ^cN>mDKC@E8-" # This should be replaced by entered password
 
 # Config
 if not os.path.exists(configpath):
@@ -43,16 +40,41 @@ def validateInput(input):
 		return False
 	else:
 		return True
+
+def encryptPassword(password):
+	cipher = AES.new(key, AES.MODE_EAX)
+	#print(password.encode())
+	ciphertext, tag = cipher.encrypt_and_digest(password.encode())
+	#print(ciphertext)
+	#print(b64encode(ciphertext))
+	#print(b64encode(ciphertext).decode())
+	return b64encode(ciphertext).decode(), b64encode(cipher.nonce).decode(), b64encode(tag).decode()
+
+def decryptPassword(accountData):
+	nonce = accountData['nonce']
+	cipher = AES.new(key, AES.MODE_EAX, b64decode(nonce))
+	encryptedPassword = accountData['password']
+	#print(encryptedPassword)
+	#print(b64decode(encryptedPassword))
+	tag = accountData['tag']
+	password = cipher.decrypt_and_verify(b64decode(encryptedPassword), b64decode(tag))
+	#print(password)
+	#print(password.decode())
+	return password.decode()
 	
 def createNewAccount():
 	newusername = input("Enter the username: ")
 	newpassword = input("Enter the password: ")
 	newmobile = input("Enter the mobile code, blank if none: ")
 
+	password, nonce, tag = encryptPassword(newpassword)
+
 	data['accounts'].append({  
 		'username': newusername,
-		'password': newpassword,
-		'mobile': newmobile
+		'password': password,
+		'mobile': newmobile,
+		'nonce': nonce,
+		'tag': tag
 	})
 	
 	with open(config, 'w') as outfile:  
@@ -94,9 +116,11 @@ def browserLogin(i):
 		chosenAccount = input("Type the number for the account you would like to display login details for: ")
 
 	chosenAccount = int(chosenAccount) - 1 #line it up with json, make int
+
+	password = decryptPassword(data['accounts'][chosenAccount])
 	
 	print("username: {}".format(data['accounts'][chosenAccount]['username']))
-	print("password: {}".format(data['accounts'][chosenAccount]['password']))
+	print("password: {}".format(password))
 	if data['accounts'][chosenAccount]['mobile']:
 		print("2FA code: {}".format(sa.generate_twofactor_code(base64.b64decode(data['accounts'][chosenAccount]['mobile']))))
 	enter()
@@ -122,7 +146,7 @@ def main ():
 	cls()
 	
 	print("########################")
-	print("# jfx's Smurf Switcher #")
+	print("# Noctoz Steam Account Switcher #")
 	print("########################")
 	print("")
 	
@@ -188,8 +212,10 @@ def main ():
 		#dargds = ['C:\Program Files (x86)\Steam\Steam.exe', '-login', data['accounts'][chosenAccount]['username'], data['accounts'][chosenAccount]['password']]#args
 		#subprocess.call(dargds) #run steam
 
+		password = decryptPassword(data['accounts'][chosenAccount])
+
 		print("Launching Steam...")
-		os.system('start "" "C:\Program Files (x86)\Steam\Steam.exe" -login {} {}'.format(data['accounts'][chosenAccount]['username'],data['accounts'][chosenAccount]['password']))
+		os.system('start "" "C:\Program Files (x86)\Steam\Steam.exe" -login {} {}'.format(data['accounts'][chosenAccount]['username'], password))
 
 		if data['accounts'][chosenAccount]['mobile']: #if theres a mobile code
 			print("Waiting for Steamguard window...")
