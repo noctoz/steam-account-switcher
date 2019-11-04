@@ -108,6 +108,33 @@ def editConfig():
 	enter()
 	main()
 
+def moveAccount(i):
+	chosenMove = input("Type the number for the account you would like to move: ")
+
+	while validateInput(chosenMove) == False: #validation, check if its a number
+		print("ERROR: Choose an account on the list.")
+		chosenMove = input("Type the number for the account you would like to move: ")
+
+	chosenMove = int(chosenMove) - 1 #line it up with the json, make it an int
+
+	chosenPosition = input("Type the position you want to move the account to: ")
+
+	while validateInput(chosenPosition) == False: #validation, check if its a number
+		print("ERROR: Choose a valid position.")
+		chosenPosition = input("Type the position you want to move the account to: ")
+
+	chosenPosition = int(chosenPosition) - 1 #line it up with the json, make it an int
+
+	itemToMove = data['accounts'].pop(chosenMove)
+	data['accounts'].insert(chosenPosition, itemToMove)
+
+	with open(config, 'w') as outfile:  
+		json.dump(data, outfile, sort_keys = False, indent = 4, ensure_ascii=False)
+	
+	print("Account moved to top.")
+	enter()
+	main()
+
 def browserLogin(i):
 	chosenAccount = input("Type the number for the account you would like to display login details for: ")
 	
@@ -159,6 +186,7 @@ def main ():
 	print("")
 	print("n - Add new account")
 	print("d - Delete an account")
+	print("m - Move account to index")
 	print("e - Edit config")
 	print("b - Print login details (for browser logins)")
 	print("c - Mobile code only")
@@ -170,10 +198,10 @@ def main ():
 
 
 	while chosenAccount.isdigit() == False: # validation, check if its a number, this check is needed to differentiate the character options from numerical and also to provide some nice feedback to the user
-		if chosenAccount == "n" or chosenAccount == "e" or chosenAccount == "d" or chosenAccount == "b" or chosenAccount == "c" or chosenAccount == "q": # we skip if its one of the alpha values
+		if chosenAccount == "n" or chosenAccount == "e" or chosenAccount == "d" or chosenAccount == "m" or chosenAccount == "b" or chosenAccount == "c" or chosenAccount == "q": # we skip if its one of the alpha values
 			break
 		print("ERROR: Please enter a valid option")
-		chosenAccount = input("Type the number for the account then press ENTER: ")
+		chosenAccount = input("Type your choice then press ENTER: ")
 
 
 	if chosenAccount.isdigit() == False: #if its still false its one of the alpha values
@@ -182,6 +210,9 @@ def main ():
 		
 		if chosenAccount == "d":
 			deleteAccount(i)
+
+		if chosenAccount == "m":
+			moveAccount(i)
 			
 		if chosenAccount == "e":
 			editConfig()
