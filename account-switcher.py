@@ -207,7 +207,26 @@ def printHeader():
 	print("#################################")
 	print("")
 
+def validateDataFile():
+	wasUpdated = False
+
+	for account in data['accounts']:
+		if not 'nickname' in account:
+			print("No nickname field for account " + account['username'] + ", fixing!")
+			account['nickname'] = ""
+			wasUpdated = True
+
+	# If data was updated we need to write to file
+	if wasUpdated:
+		with open(configFile, 'w') as outfile:  
+			json.dump(data, outfile, sort_keys = False, indent = 4, ensure_ascii=False)
+		
+		print("Data file was updated")
+		enter()
+
 def main():
+	cls()
+	
 	printHeader()
 	print("You need to login to use this application!")
 	userName = input("username: ")
@@ -243,6 +262,9 @@ def main():
 	stringKey = password.ljust(16, 'x') # We need to make sure the string is at least 16 long so we add padding
 	stringKey = stringKey[:16] # In case the string is longer we trim it
 	key = stringKey.encode()
+
+	# Check if data file needs to be upgraded
+	validateDataFile()
 	
 	authenticatedMain()
 
