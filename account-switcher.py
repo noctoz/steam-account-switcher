@@ -88,14 +88,12 @@ def createNewAccount():
 		newUsername = input("Enter the username: ")
 	newPassword = input("Enter the password: ")
 	newNickname = input("Enter the nickname, black if none: ")
-	newMobileCode = input("Enter the mobile code, blank if none: ")
 
 	password, nonce, tag = encryptPassword(newPassword)
 
 	data['accounts'].append({  
 		'username': newUsername,
 		'password': password,
-		'mobile': newMobileCode,
 		'nickname': newNickname,
 		'nonce': nonce,
 		'tag': tag
@@ -122,12 +120,6 @@ def deleteAccount():
 		json.dump(data, outfile, sort_keys = False, indent = 4, ensure_ascii=False)
 	
 	print("Account deleted.")
-	enter()
-	authenticatedMain()
-
-	
-def editConfig():
-	subprocess.call(['notepad.exe', configFile]) #we use subprocess here because its better and it works
 	enter()
 	authenticatedMain()
 
@@ -158,12 +150,12 @@ def moveAccount():
 	enter()
 	authenticatedMain()
 
-def addNickname():
-	chosenAccount = input("Type the number for the account you want to add nickname for: ")
+def setNickname():
+	chosenAccount = input("Type the number for the account you want to set nickname for: ")
 
 	while validateInput(chosenAccount) == False: #validation, check if its a number
 		print("ERROR: Choose an account on the list.")
-		chosenAccount = input("Type the number for the account you want to add nickname for: ")
+		chosenAccount = input("Type the number for the account you want to set nickname for: ")
 
 	chosenAccount = int(chosenAccount) - 1 #line it up with the json, make it an int
 
@@ -174,11 +166,11 @@ def addNickname():
 	with open(configFile, 'w') as outfile:  
 		json.dump(data, outfile, sort_keys = False, indent = 4, ensure_ascii=False)
 
-	print("Nickname added to account.")
+	print("Nickname set for account.")
 	enter()
 	authenticatedMain()
 
-def browserLogin():
+def printLoginDetails():
 	chosenAccount = input("Type the number for the account you would like to display login details for: ")
 	
 	while validateInput(chosenAccount) == False: #validation, check if its a number
@@ -191,23 +183,7 @@ def browserLogin():
 	
 	print("username: {}".format(data['accounts'][chosenAccount]['username']))
 	print("password: {}".format(password))
-	if data['accounts'][chosenAccount]['mobile']:
-		print("2FA code: {}".format(sa.generate_twofactor_code(base64.b64decode(data['accounts'][chosenAccount]['mobile']))))
-	enter()
-	authenticatedMain()
-	
-def mobileCode():
-	chosenAccount = input("Type the number for the account you would like to display login details for: ")
-	
-	while validateInput(chosenAccount) == False: #validation, check if its a number
-		print("ERROR: Choose an account on the list")
-		chosenAccount = input("Type the number for the account you would like to display login details for: ")
 
-	chosenAccount = int(chosenAccount) - 1 #line it up with json, make int
-	if data['accounts'][chosenAccount]['mobile']:
-		print("2FA code: {}".format(sa.generate_twofactor_code(base64.b64decode(data['accounts'][chosenAccount]['mobile']))))
-	else:
-		print("Error finding mobile code for account")
 	enter()
 	authenticatedMain()
 
@@ -217,6 +193,7 @@ def printHeader():
 	print("#################################")
 	print("")
 
+# Valida and update data file
 def validateDataFile():
 	wasUpdated = False
 
@@ -288,16 +265,18 @@ def authenticatedMain():
 	global accountCount
 	accountCount = 1
 	for account in data['accounts']:
-		print(str(accountCount) + ' - ' + account['username'] + " (" + account['nickname'] + ")")
+		nicknameString = ""
+		if account['nickname'] != "": # Do not print nickname if not set
+			nicknameString = " ({})".format(account['nickname'])
+		print(str(accountCount) + ' - ' + account['username'] + nicknameString)
 		accountCount = accountCount + 1
 
 	options = {}
 	options['n'] = { 'description': "Add new account", 'func': createNewAccount }
 	options['d'] = { 'description': "Delete an account", 'func': deleteAccount }
 	options['m'] = { 'description': "Move account to index", 'func': moveAccount }
-	options['a'] = { 'description': "Add nickname", 'func': addNickname }
-	options['e'] = { 'description': "Edit config", 'func': editConfig }
-	options['b'] = { 'description': "Print login details (for browser login)", 'func': browserLogin }
+	options['s'] = { 'description': "Set nickname for account", 'func': setNickname }
+	options['p'] = { 'description': "Print login details", 'func': printLoginDetails }
 	options['q'] = { 'description': "Quit", 'func': exit }
 
 	print("")
