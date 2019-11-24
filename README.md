@@ -11,5 +11,5 @@ Written in Python 3.
 * Run python script
 
 ## Data
-Data is stored in %appdata%\NoctozSteamAccountSwitcher\users.json or DRIVE:\Users\USERNAME\AppData\Roaming\NoctozSteamAccountSwitcher\users.json  
+Data is stored in %appdata%\NoctozSteamAccountSwitcher\username.json or DRIVE:\Users\USERNAME\AppData\Roaming\NoctozSteamAccountSwitcher\username.json  
 Passwords are encrypted using AES.
