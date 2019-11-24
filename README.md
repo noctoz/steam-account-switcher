@@ -1,5 +1,6 @@
 # NoctozSteamAccountSwitcher
-Steam Account Switcher written in Python with mobile support!
+Steam Account Switcher with AES encryption and password protected data files.
+Written in Python 3.
 
 ## TO-DO
 * Master password
