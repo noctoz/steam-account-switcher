@@ -1,31 +1,21 @@
 # Noctoz Steam Account Switcher using steam.guard by ValvePython and PyAutoIt by jacexh #
 
-import autoit, time, os, json, subprocess, base64
+import autoit, time, os, json, subprocess, base64, hashlib, binascii
 from base64 import b64encode, b64decode
 import steam.guard as sa
 from Crypto.Cipher import AES
 
 # Config settings here, feel free to change them!
 configpath = os.getenv('APPDATA')+"\\NoctozAccountSwitcher"
-config = configpath + "\\users.json"
+configFile = "dummy.txt" # This is set to a real value when logging in
 
-key = b"<FbZ^cN>mDKC@E8-" # This should be replaced by entered password
+key = bytearray(16) # This will be set based on password
+
+data = {}
 
 # Config
 if not os.path.exists(configpath):
     os.makedirs(configpath)
-
-# Check to see if the config exists, if not make one
-# Messy way of doing it but it gets the job done... maybe I'll re-do it one day...
-try:
-	with open(config, 'r') as data_file:    
-		data = json.load(data_file)
-except:
-	f = open(config, 'w+')
-	f.write('{"accounts":[]}')
-	f.close()
-	with open(config) as data_file:    
-		data = json.load(data_file)
 
 # Defining key stuff #
 
@@ -40,6 +30,26 @@ def validateInput(input):
 		return False
 	else:
 		return True
+
+# This is used to hash the password used to login to the application
+def hashAppPassword(password):
+    # Hash a password for storing.
+    salt = hashlib.sha256(os.urandom(60)).hexdigest().encode('ascii')
+    pwdhash = hashlib.pbkdf2_hmac('sha512', password.encode('utf-8'), salt, 100000)
+    pwdhash = binascii.hexlify(pwdhash)
+    return (salt + pwdhash).decode('ascii')
+ 
+# This verifies the application password
+def verifyAppPassword(storedPassword, providedPassword):
+    # Verify a stored password against one provided by user
+    salt = storedPassword[:64]
+    storedPassword = storedPassword[64:]
+    pwdhash = hashlib.pbkdf2_hmac('sha512', 
+                                  providedPassword.encode('utf-8'), 
+                                  salt.encode('ascii'), 
+                                  100000)
+    pwdhash = binascii.hexlify(pwdhash).decode('ascii')
+    return pwdhash == storedPassword
 
 def encryptPassword(password):
 	cipher = AES.new(key, AES.MODE_EAX)
@@ -77,12 +87,12 @@ def createNewAccount():
 		'tag': tag
 	})
 	
-	with open(config, 'w') as outfile:  
+	with open(configFile, 'w') as outfile:  
 		json.dump(data, outfile, sort_keys = False, indent = 4, ensure_ascii=False)
 	
 	print("Account created.")
 	enter()
-	main()
+	authenticatedMain()
 
 	
 def deleteAccount(i):
@@ -95,18 +105,18 @@ def deleteAccount(i):
 	chosenDelete = int(chosenDelete) - 1 #line it up with the json, make it an int
 	del data['accounts'][chosenDelete]
 	
-	with open(config, 'w') as outfile:  
+	with open(configFile, 'w') as outfile:  
 		json.dump(data, outfile, sort_keys = False, indent = 4, ensure_ascii=False)
 	
 	print("Account deleted.")
 	enter()
-	main()
+	authenticatedMain()
 
 	
 def editConfig():
-	subprocess.call(['notepad.exe', config]) #we use subprocess here because its better and it works
+	subprocess.call(['notepad.exe', configFile]) #we use subprocess here because its better and it works
 	enter()
-	main()
+	authenticatedMain()
 
 def moveAccount(i):
 	chosenMove = input("Type the number for the account you would like to move: ")
@@ -128,12 +138,12 @@ def moveAccount(i):
 	itemToMove = data['accounts'].pop(chosenMove)
 	data['accounts'].insert(chosenPosition, itemToMove)
 
-	with open(config, 'w') as outfile:  
+	with open(configFile, 'w') as outfile:  
 		json.dump(data, outfile, sort_keys = False, indent = 4, ensure_ascii=False)
 	
 	print("Account moved to top.")
 	enter()
-	main()
+	authenticatedMain()
 
 def browserLogin(i):
 	chosenAccount = input("Type the number for the account you would like to display login details for: ")
@@ -151,7 +161,7 @@ def browserLogin(i):
 	if data['accounts'][chosenAccount]['mobile']:
 		print("2FA code: {}".format(sa.generate_twofactor_code(base64.b64decode(data['accounts'][chosenAccount]['mobile']))))
 	enter()
-	main()
+	authenticatedMain()
 	
 def mobileCode(i):
 	chosenAccount = input("Type the number for the account you would like to display login details for: ")
@@ -166,10 +176,47 @@ def mobileCode(i):
 	else:
 		print("Error finding mobile code for account")
 	enter()
-	main()
-	
-def main ():
+	authenticatedMain()
 
+def main():
+	userName = input("Input username: ")
+	global configFile # Reference the global configFile
+	configFile = configpath + "\\" + userName + ".json"
+	
+	# Check if the files exists
+	# If it does not exist we create it and add some initial data
+	if not os.path.exists(configFile):
+		# Request user to choose a password
+		password = input("Choose password: ")
+		hashedPassword = hashAppPassword(password)
+		initialData = { "password": hashedPassword, "accounts": [] }
+		with open (configFile, "w+") as dataFile:
+			json.dump(initialData, dataFile, sort_keys = False, indent = 4, ensure_ascii=False)
+
+	# When we get here we always have a file with some data
+	with open(configFile, 'r') as dataFile:
+		try:
+			global data # Need to access the global instance
+			data = json.load(dataFile)
+		except json.decoder.JSONDecodeError as error:
+			print("Failed to decode json data. File is corrupt.")
+			return
+
+	# Check password
+	password = input("Input password: ")
+	while not verifyAppPassword(data["password"], password):
+		print("Incorrect password entered!")
+		password = input("Input password: ")
+
+	global key # Reference the global key variable
+	stringKey = password.ljust(16, 'x') # We need to make sure the string is at least 16 long so we add padding
+	stringKey = stringKey[:16] # In case the string is longer we trim it
+	key = stringKey.encode()
+	
+	authenticatedMain()
+
+# This is what you enter once you are authenticated
+def authenticatedMain():
 	cls()
 	
 	print("########################")
@@ -263,7 +310,7 @@ def main ():
 			autoit.send('{ENTER}')
 		
 		input()
-		main()
+		authenticatedMain()
 
 if __name__ == "__main__":
 	main()
