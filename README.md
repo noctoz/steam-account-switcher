@@ -2,9 +2,6 @@
 Steam Account Switcher with AES encryption and password protected data files.
 Written in Python 3.
 
-## TO-DO
-* Master password
-
 ## Installation
 * pip install pyautoit
 * pip install steam
