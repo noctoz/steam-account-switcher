@@ -26,7 +26,7 @@ def enter():
 	input("Press ENTER to continue . . .")
 
 def validateInput(input):
-	if input.isdigit() == False or int(input) >= i or int(input) < 1:
+	if input.isdigit() == False or int(input) >= accountCount or int(input) < 1:
 		return False
 	else:
 		return True
@@ -51,6 +51,7 @@ def verifyAppPassword(storedPassword, providedPassword):
     pwdhash = binascii.hexlify(pwdhash).decode('ascii')
     return pwdhash == storedPassword
 
+# Encrypt steam account password
 def encryptPassword(password):
 	cipher = AES.new(key, AES.MODE_EAX)
 	#print(password.encode())
@@ -60,6 +61,7 @@ def encryptPassword(password):
 	#print(b64encode(ciphertext).decode())
 	return b64encode(ciphertext).decode(), b64encode(cipher.nonce).decode(), b64encode(tag).decode()
 
+# Decrypt steam account password
 def decryptPassword(accountData):
 	nonce = accountData['nonce']
 	cipher = AES.new(key, AES.MODE_EAX, b64decode(nonce))
@@ -73,16 +75,18 @@ def decryptPassword(accountData):
 	return password.decode()
 	
 def createNewAccount():
-	newusername = input("Enter the username: ")
-	newpassword = input("Enter the password: ")
-	newmobile = input("Enter the mobile code, blank if none: ")
+	newUsername = input("Enter the username: ")
+	newPassword = input("Enter the password: ")
+	newNickname = input("Enter the nickname, black if none: ")
+	newMobileCode = input("Enter the mobile code, blank if none: ")
 
-	password, nonce, tag = encryptPassword(newpassword)
+	password, nonce, tag = encryptPassword(newPassword)
 
 	data['accounts'].append({  
-		'username': newusername,
+		'username': newUsername,
 		'password': password,
-		'mobile': newmobile,
+		'mobile': newMobileCode,
+		'nickname': newNickname,
 		'nonce': nonce,
 		'tag': tag
 	})
@@ -93,9 +97,8 @@ def createNewAccount():
 	print("Account created.")
 	enter()
 	authenticatedMain()
-
 	
-def deleteAccount(i):
+def deleteAccount():
 	chosenDelete = input("Type the number for the account you would like to delete: ")
 	
 	while validateInput(chosenDelete) == False: #validation, check if its a number
@@ -118,7 +121,7 @@ def editConfig():
 	enter()
 	authenticatedMain()
 
-def moveAccount(i):
+def moveAccount():
 	chosenMove = input("Type the number for the account you would like to move: ")
 
 	while validateInput(chosenMove) == False: #validation, check if its a number
@@ -141,11 +144,31 @@ def moveAccount(i):
 	with open(configFile, 'w') as outfile:  
 		json.dump(data, outfile, sort_keys = False, indent = 4, ensure_ascii=False)
 	
-	print("Account moved to top.")
+	print("Account moved to new index.")
 	enter()
 	authenticatedMain()
 
-def browserLogin(i):
+def addNickname():
+	chosenAccount = input("Type the number for the account you want to add nickname for: ")
+
+	while validateInput(chosenAccount) == False: #validation, check if its a number
+		print("ERROR: Choose an account on the list.")
+		chosenAccount = input("Type the number for the account you want to add nickname for: ")
+
+	chosenAccount = int(chosenAccount) - 1 #line it up with the json, make it an int
+
+	newNickname = input("Type the new nickname: ")
+
+	data['accounts'][chosenAccount]['nickname'] = newNickname
+
+	with open(configFile, 'w') as outfile:  
+		json.dump(data, outfile, sort_keys = False, indent = 4, ensure_ascii=False)
+
+	print("Nickname added to account.")
+	enter()
+	authenticatedMain()
+
+def browserLogin():
 	chosenAccount = input("Type the number for the account you would like to display login details for: ")
 	
 	while validateInput(chosenAccount) == False: #validation, check if its a number
@@ -163,7 +186,7 @@ def browserLogin(i):
 	enter()
 	authenticatedMain()
 	
-def mobileCode(i):
+def mobileCode():
 	chosenAccount = input("Type the number for the account you would like to display login details for: ")
 	
 	while validateInput(chosenAccount) == False: #validation, check if its a number
@@ -178,8 +201,16 @@ def mobileCode(i):
 	enter()
 	authenticatedMain()
 
+def printHeader():
+	print("#################################")
+	print("# Noctoz Steam Account Switcher #")
+	print("#################################")
+	print("")
+
 def main():
-	userName = input("Input username: ")
+	printHeader()
+	print("You need to login to use this application!")
+	userName = input("username: ")
 	global configFile # Reference the global configFile
 	configFile = configpath + "\\" + userName + ".json"
 	
@@ -203,10 +234,10 @@ def main():
 			return
 
 	# Check password
-	password = input("Input password: ")
+	password = input("password: ")
 	while not verifyAppPassword(data["password"], password):
 		print("Incorrect password entered!")
-		password = input("Input password: ")
+		password = input("password: ")
 
 	global key # Reference the global key variable
 	stringKey = password.ljust(16, 'x') # We need to make sure the string is at least 16 long so we add padding
@@ -219,62 +250,44 @@ def main():
 def authenticatedMain():
 	cls()
 	
-	print("########################")
-	print("# Noctoz Steam Account Switcher #")
-	print("########################")
-	print("")
+	printHeader()
 	
-	global i
-	i = 1
+	# List all registered account and count the number of accounts for input validation
+	global accountCount
+	accountCount = 1
 	for account in data['accounts']:
-		print(str(i) + ' - ' + account['username'])
-		i = i + 1
+		print(str(accountCount) + ' - ' + account['username'] + " (" + account['nickname'] + ")")
+		accountCount = accountCount + 1
+
+	options = {}
+	options['n'] = { 'description': "Add new account", 'func': createNewAccount }
+	options['d'] = { 'description': "Delete an account", 'func': deleteAccount }
+	options['m'] = { 'description': "Move account to index", 'func': moveAccount }
+	options['a'] = { 'description': "Add nickname", 'func': addNickname }
+	options['e'] = { 'description': "Edit config", 'func': editConfig }
+	options['b'] = { 'description': "Print login details (for browser login)", 'func': browserLogin }
+	options['q'] = { 'description': "Quit", 'func': exit }
 
 	print("")
-	print("n - Add new account")
-	print("d - Delete an account")
-	print("m - Move account to index")
-	print("e - Edit config")
-	print("b - Print login details (for browser logins)")
-	print("c - Mobile code only")
-	print("q - Quit")
+	for key in options:
+		print(key + " - " + options[key]['description'])
 	print("")
 	print("Typing in the account and ENTER will auto login to that account")
 
 	chosenAccount = input("Type your choice then press ENTER: ")
 
-
-	while chosenAccount.isdigit() == False: # validation, check if its a number, this check is needed to differentiate the character options from numerical and also to provide some nice feedback to the user
-		if chosenAccount == "n" or chosenAccount == "e" or chosenAccount == "d" or chosenAccount == "m" or chosenAccount == "b" or chosenAccount == "c" or chosenAccount == "q": # we skip if its one of the alpha values
+	# Check that the user has either choosen a number or a valid option
+	while chosenAccount.isdigit() == False:
+		if chosenAccount in options:
 			break
 		print("ERROR: Please enter a valid option")
 		chosenAccount = input("Type your choice then press ENTER: ")
 
+	# If the user did not choose a number we find the correct function for the choosen option
+	if chosenAccount.isdigit() == False:
+		options[chosenAccount]['func']()
 
-	if chosenAccount.isdigit() == False: #if its still false its one of the alpha values
-		if chosenAccount == "n":
-			createNewAccount()		
-		
-		if chosenAccount == "d":
-			deleteAccount(i)
-
-		if chosenAccount == "m":
-			moveAccount(i)
-			
-		if chosenAccount == "e":
-			editConfig()
-			
-		if chosenAccount == "b":
-			browserLogin(i)
-			
-		if chosenAccount == "c":
-			mobileCode(i)
-			
-		if chosenAccount == "q":
-			exit()
-
-	else: #they chose a number of some sorts
-
+	else: # If a number was choosen we attempt to login to that account
 		while validateInput(chosenAccount) == False: #validation, check if the account exists
 			print("ERROR: Choose an account on the list.")
 			chosenAccount = input("Type the number for the account then press ENTER: ")
