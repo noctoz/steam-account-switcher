@@ -318,20 +318,6 @@ def authenticatedMain():
 
 		print("Launching Steam...")
 		os.system('start "" "C:\Program Files (x86)\Steam\Steam.exe" -login {} {}'.format(data['accounts'][chosenAccount]['username'], password))
-
-		if data['accounts'][chosenAccount]['mobile']: #if theres a mobile code
-			print("Waiting for Steamguard window...")
-			autoit.win_wait("Steam Guard") #wait for window... sometimes it takes a while
-
-			print("Steamguard window found, generating code...")
-			code = sa.generate_twofactor_code(base64.b64decode(data['accounts'][chosenAccount]['mobile']))
-			
-			autoit.win_activate("Steam Guard") #open it up in case it's not activated
-			autoit.win_wait_active("Steam Guard") #wait for it to be activated, in case of delay
-			print("Entering auth code: {} into window...".format(code))
-			autoit.send(code)
-			time.sleep(0.2) #small delay cant hurt
-			autoit.send('{ENTER}')
 		
 		input()
 		authenticatedMain()
