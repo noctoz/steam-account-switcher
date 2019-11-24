@@ -73,9 +73,19 @@ def decryptPassword(accountData):
 	#print(password)
 	#print(password.decode())
 	return password.decode()
+
+def validateNewUsername(newUsername):
+	for account in data['accounts']:
+		if account['username'] == newUsername:
+			return False
+
+	return True
 	
 def createNewAccount():
 	newUsername = input("Enter the username: ")
+	while validateNewUsername(newUsername) == False:
+		print("ERROR: Choosen username not valid!")
+		newUsername = input("Enter the username: ")
 	newPassword = input("Enter the password: ")
 	newNickname = input("Enter the nickname, black if none: ")
 	newMobileCode = input("Enter the mobile code, blank if none: ")
@@ -226,7 +236,7 @@ def validateDataFile():
 
 def main():
 	cls()
-	
+
 	printHeader()
 	print("You need to login to use this application!")
 	userName = input("username: ")
