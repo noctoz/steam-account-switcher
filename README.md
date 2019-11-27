@@ -6,6 +6,7 @@ Written in Python 3.
 * pip install pyautoit
 * pip install steam
 * pip install pycryptodome
+* pip install stdiomask
 
 ## Instructions
 * Run python script

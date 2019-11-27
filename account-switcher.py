@@ -1,6 +1,6 @@
 # Noctoz Steam Account Switcher using steam.guard by ValvePython and PyAutoIt by jacexh #
 
-import autoit, time, os, json, subprocess, base64, hashlib, binascii
+import autoit, time, os, json, subprocess, base64, hashlib, binascii, stdiomask
 from base64 import b64encode, b64decode
 import steam.guard as sa
 from Crypto.Cipher import AES
@@ -240,10 +240,10 @@ def main():
 			return
 
 	# Check password
-	password = input("password: ")
+	password = stdiomask.getpass(prompt="password: ")
 	while not verifyAppPassword(data["password"], password):
 		print("Incorrect password entered!")
-		password = input("password: ")
+		password = stdiomask.getpass(prompt="password: ")
 
 	global key # Reference the global key variable
 	stringKey = password.ljust(16, 'x') # We need to make sure the string is at least 16 long so we add padding
